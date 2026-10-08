@@ -25,7 +25,7 @@ The current demonstration uses **260 synthetic daily bars**, generated locally b
 
 Synthetic data validates software behavior. Its reported returns are regression fixtures, not evidence of strategy profitability. The `paper` command replays stored historical bars and resets capital on each run; it is not a persistent brokerage simulator.
 
-Real data can enter through a user-provided CSV or the Alpaca historical market-data API. The Alpaca adapter has been tested with mocked HTTP responses; real market data has not yet been downloaded because credentials have not been configured.
+Real data can enter through a user-provided CSV or the Alpaca historical market-data API. The Alpaca adapter has passed mocked pagination tests and a real read-only check: 252 SPY daily bars for 2024 were downloaded from IEX, stored in MySQL, and backtested with C++ indicators on October 8, 2026.
 
 ## CSV ingestion and cleaning
 
@@ -100,7 +100,7 @@ Supported scope: regular market hours, integer shares, US equities priced at lea
 
 Intent is written to `data/paper.sqlite` before submission. Reusing a client ID queries the broker instead of sending another POST; its parameters cannot change. After a timeout, reconcile using the original ID. An uncertain submission blocks new IDs. If the broker cannot locate the prior order, inspect the paper account manually rather than changing IDs or deleting the journal. The journal stores order state and observed equity peaks, not credentials. `accepted` does not mean `filled`.
 
-This is a one-shot interface. Backtest signals are not yet submitted in an unattended loop. Only mocked HTTP tests have run; no brokerage order has been sent. Use a dedicated paper account without external concurrent trading. Local locking cannot control other clients, and peak tracking covers only the program's observation period.
+This is a one-shot interface. Backtest signals are not yet submitted in an unattended loop. Real paper-account authentication and historical data retrieval have been verified. Order submission remains tested only with mocked HTTP responses; no brokerage order has been sent. Use a dedicated paper account without external concurrent trading. Local locking cannot control other clients, and peak tracking covers only the program's observation period.
 
 ## Container workflow
 

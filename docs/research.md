@@ -21,7 +21,7 @@ For a future mature execution engine, evaluate NautilusTrader's broker coverage 
 
 ## Data and simulation boundaries
 
-The [Alpaca market-data FAQ](https://docs.alpaca.markets/us/docs/market-data-faq) distinguishes IEX and SIP coverage and permissions. IEX volume should not be treated as full-market volume. The adapter specifies feed and raw adjustment, handles pagination, and retains CSV snapshots. Actual account entitlements remain unverified.
+The [Alpaca market-data FAQ](https://docs.alpaca.markets/us/docs/market-data-faq) distinguishes IEX and SIP coverage and permissions. IEX volume should not be treated as full-market volume. The adapter specifies feed and raw adjustment, handles pagination, and retains CSV snapshots. IEX historical access has been verified for the configured paper account; SIP entitlements remain unverified.
 
 [Alpaca paper trading](https://docs.alpaca.markets/us/docs/paper-trading) does not reproduce every real execution factor. Local replay is simpler still: it does not model order-book queues, partial fills, broker rejections, borrow availability, corporate actions, taxes, or real-time latency. Demonstration results cannot establish live profitability.
 

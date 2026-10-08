@@ -13,6 +13,6 @@
 
 The verifier reads the paper-account status, downloads completed 2024 SPY daily bars from IEX, saves a CSV snapshot, validates and stores them in MySQL, and runs the C++-enabled backtest. It submits **no orders** and does not print credentials or the account object. The resulting HTML replaces the latest report; a separate JSON and database record retain the run.
 
-The first attempt remains pending until credentials are supplied. Receiving data successfully does not establish strategy profitability. IEX covers one exchange rather than the consolidated US market. Broker order testing is a separate step.
+This workflow was verified successfully on the current Mac on October 8, 2026, with 252 SPY daily bars for 2024. On another machine, credentials must be configured before running it. Receiving data successfully does not establish strategy profitability. IEX covers one exchange rather than the consolidated US market. Broker order testing is a separate step.
 
 Reference: [Alpaca's official paper-trading setup](https://alpaca.markets/learn/start-paper-trading).
