@@ -2,7 +2,7 @@
 
 A US equities research and paper trading MVP built with Python, C++17, and MySQL. The verified workflow covers data validation, storage, moving-average signals, next-bar execution, risk checks, and persistent JSON/HTML reports. Live trading is disabled.
 
-[Research](docs/research.md) · [Architecture](docs/architecture.md) · [Verification](docs/verification.md) · [GitHub guide](docs/github-guide.md)
+[Research](docs/research.md) · [Architecture](docs/architecture.md) · [Verification](docs/verification.md) · [GitHub guide](docs/github-guide.md) · [MySQL learning guide](docs/mysql-guide.md)
 
 ## Quick start
 
