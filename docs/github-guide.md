@@ -1,11 +1,11 @@
-# 在 GitHub 查看与修改
+# Viewing and editing the project on GitHub
 
-仓库默认私有：只有你和你明确添加的协作者能访问。
+The repository is private and accessible to its owner and explicitly invited collaborators.
 
-- Code 页面查看源码，README 是运行入口，docs/research.md 是架构与许可证比较。
-- 点击文件再点铅笔可以编辑，保存时说明改了什么。初学时建议创建分支，然后用 Pull Request 比较变化。
-- Actions 查看每次提交的自动测试；绿色代表通过，红色查看失败日志。CI 使用临时 MySQL，不连接交易账户。
-- Issues 记录想改的功能或发现的问题。
-- 本机修改后提交并推送，网页即可看到。网页修改后先同步到本机再继续修改。
+- **Code:** browse source files. Start with README for setup and `docs/research.md` for platform and license comparisons.
+- **Editing:** open a file and use the pencil button. Explain the change in the commit message. Prefer a new branch and a pull request to review differences.
+- **Actions:** inspect automated checks for each push. Green indicates success; open failed jobs to read logs. CI uses a temporary MySQL service and does not connect to a trading account.
+- **Issues:** record bugs, questions, and feature ideas.
+- **Local workflow:** commit and push local changes to publish them to the repository. Pull remote changes before editing the local copy.
 
-本项目不上传 .env、数据库、订单日志或虚拟环境。换电脑后需要重新填写配置并启动服务。
+Never commit `.env`, databases, brokerage journals, or virtual environments. On a new computer, recreate local configuration and start the required services.

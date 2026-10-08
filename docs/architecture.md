@@ -1,32 +1,36 @@
-# 架构及完成边界
+# Architecture and implementation scope
 
 ```mermaid
 flowchart LR
-  CSV[CSV / 合成数据] --> Clean[严格清洗与 UTC 标准化]
-  API[Alpaca 只读历史 REST] --> Snapshot[CSV 快照]
+  CSV[CSV / synthetic bars] --> Clean[Validation and UTC normalization]
+  API[Alpaca historical REST] --> Snapshot[CSV snapshot]
   Snapshot --> Clean
   Clean --> Store[MySQL / SQLite bars]
-  Store --> Signal[Python 策略 + C++ SMA]
-  Signal --> Risk[仓位和损失限制]
-  Risk --> Replay[下一根开盘本地撮合]
-  Replay --> Audit[runs + JSON + HTML]
-  Live[实盘接口] --> Block[强制拒绝]
+  Store --> Signal[Python strategy + C++ SMA]
+  Signal --> Risk[Position and loss limits]
+  Risk --> Replay[Next-open replay execution]
+  Replay --> Audit[Database runs + JSON + HTML]
+  Intent[Explicit order intent] --> Checks[Account / clock / quote / risk checks]
+  Checks --> Journal[Durable client-ID journal]
+  Journal --> Paper[Alpaca paper limit orders]
+  Live[Live trading entry] --> Block[Explicit rejection]
 ```
 
-| 模块 | 文件 | 本次验证 |
+| Component | Files | Verified scope |
 |---|---|---|
-| 行情与清洗 | data.py / alpaca.py | CSV 完整链路；Alpaca 分页模拟测试 |
-| 存储 | storage.py | SQLite 去重、冲突、事务回滚、运行记录；MySQL 待服务环境验证 |
-| 指标 | strategy.py / cpp/indicators.cpp | C++ 编译成功；与 Python 多窗口逐项一致 |
-| 风控和执行 | risk.py / engine.py | 下一根开盘、成本、停机、数量/资金约束 |
-| 报告 | report.py | 生成独立静态 HTML，权益、摘要、成交 |
-| 实盘 | alpaca.LiveBroker / CLI live | 拒绝执行测试 |
+| Market data and cleaning | `data.py`, `alpaca.py` | CSV workflow; mocked historical API pagination |
+| Storage | `storage.py` | SQLite and real MySQL ingestion, duplicate checks, transaction rollback, and run persistence |
+| Indicators | `strategy.py`, `cpp/indicators.cpp` | Compiled C++ SMA and Python parity |
+| Replay execution | `risk.py`, `engine.py` | Next-open fills, costs, cash/quantity limits, and latched halts |
+| Paper brokerage | `paper_broker.py` | Mocked account checks, limit-order submission, timeout handling, and client-ID reconciliation |
+| Reports | `report.py` | Static HTML equity, summary, and fills; historical JSON per run |
+| Live execution | `alpaca.LiveBroker`, CLI `live` | Explicit refusal |
 
-无外部账户订单、无后台定时程序。数据 ingestion 完成后提交事务，运行结果以唯一 run_id 保存。HTML 为最新运行展示，JSON 和数据库保留独立历史。
+Bar ingestion commits as a transaction. Each replay has a unique run ID. HTML shows the latest result; JSON and database records retain individual runs. The brokerage journal uses SQLite write locking and records intent before network submission. There is no unattended background scheduler and no completed real-account API validation.
 
-后续阶段：
+Next milestones:
 
-1. 在具备服务的环境运行 MySQL 集成测试，配置备份和迁移版本。
-2. 使用授权的历史美股数据验证交易日历与公司行动，做样本外和成本敏感性分析。
-3. 实现持续本地模拟的检查点恢复，再接入券商模拟账户，验证状态机、对账和异常恢复。
-4. 用户单独确认实盘后，再评审账户限制、实时风控和小额度上线。
+1. Add database migrations, backups, and restore checks.
+2. Validate authorized historical US data, exchange calendars, and corporate actions; evaluate out-of-sample behavior and transaction-cost sensitivity.
+3. Connect a dedicated paper account, implement continuous strategy scheduling, and validate partial fills, reconciliation, and restart recovery.
+4. After separate explicit live-trading approval, review account restrictions and execution controls before a small controlled deployment.

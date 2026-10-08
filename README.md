@@ -1,12 +1,12 @@
-# USQuant：美股小资金量化 MVP
+# USQuant
 
-已在当前 Mac 环境运行 Python + C++ 的离线链路：合成行情 → 严格清洗 → 数据库 → 均线策略 → 下一根开盘成交 → 风控 → 持久化结果与 HTML 报告。另有 Alpaca 模拟账户限价单接口；实盘入口禁用。
+A US equities research and paper trading MVP built with Python, C++17, and MySQL. The verified workflow covers data validation, storage, moving-average signals, next-bar execution, risk checks, and persistent JSON/HTML reports. Live trading is disabled.
 
-[开源项目调研](docs/research.md) · [架构与后续工作](docs/architecture.md) · [验证记录](docs/verification.md)
+[Research](docs/research.md) · [Architecture](docs/architecture.md) · [Verification](docs/verification.md) · [GitHub guide](docs/github-guide.md)
 
-## 快速运行
+## Quick start
 
-在本目录执行（Python ≥3.9，C++17 编译器；离线模式没有第三方 Python 依赖）：
+Requirements: Python 3.9+ and a C++17 compiler. Run from the repository root:
 
 ```sh
 python3 scripts/build_cpp.py
@@ -15,13 +15,21 @@ python3 -m usquant demo --native
 python3 -m usquant paper --native
 ```
 
-打开 `reports/latest.html` 查看权益和成交。每次运行产生独立 `reports/<run_id>.json`，并写入数据库 `runs` 表。`demo` 使用固定的 260 根合成日线；合成数据只验证程序，收益没有投资含义，也不使用真实交易日历。`paper` 是离线历史回放，每次重新初始化资金，不是券商模拟盘或持续运行交易机器人。
+Open `reports/latest.html`. Each run also creates `reports/<run_id>.json` and a database `runs` record. Without a configured MySQL service, its integration test is skipped. The offline engine requires no third-party Python packages.
 
-不编译 C++ 时，省略 `--native` 可运行 Python 版本。选择 `--native` 时库缺失会明确失败，不会静默回退。
+Omit `--native` to use Python indicators. With `--native`, a missing compiled library causes an explicit failure.
 
-## CSV 数据
+## Where the data comes from
 
-必填列：`symbol,ts,open,high,low,close,volume`。可选：`source`（默认 csv）、`adjustment`（默认 raw）。`ts` 必须含时区，例如 `2024-01-02T21:00:00+00:00`。
+The current demonstration uses **260 synthetic daily bars**, generated locally by `usquant/__main__.py`. Closing prices combine a linear trend with a sine wave; opening prices add a small cosine variation. Highs and lows enclose the open/close, and volume is fixed at 1,000,000. The generator skips weekends but does not implement a US exchange holiday calendar. `SPY` is a demonstration label; these are not historical SPY prices.
+
+Synthetic data validates software behavior. Its reported returns are regression fixtures, not evidence of strategy profitability. The `paper` command replays stored historical bars and resets capital on each run; it is not a persistent brokerage simulator.
+
+Real data can enter through a user-provided CSV or the Alpaca historical market-data API. The Alpaca adapter has been tested with mocked HTTP responses; real market data has not yet been downloaded because credentials have not been configured.
+
+## CSV ingestion and cleaning
+
+Required columns: `symbol,ts,open,high,low,close,volume`. Optional: `source` (defaults to `csv`) and `adjustment` (defaults to `raw`). Timestamps must include a timezone, for example `2024-01-02T21:00:00+00:00`.
 
 ```sh
 python3 -m usquant ingest --csv /absolute/path/bars.csv
@@ -29,33 +37,36 @@ python3 -m usquant backtest --symbol SPY --source csv --native
 python3 -m usquant paper --symbol SPY --source csv --native
 ```
 
-清洗会统一 UTC、排序并合并完全相同的重复记录。非法数值、OHLC 错误和冲突重复数据中止整个批次。数据库价格字段仅容忍 1e-12 的浮点舍入差异以支持 Mac/Linux 重复导入，其他字段精确比较，不覆盖已有记录。主键包括 symbol/time/source/adjustment，避免混合不同数据源。当前引擎一次只接受一个股票的 raw 日线序列。调用方必须保证输入是完成的日线，不能输入分钟线或未完成的当天行情。
+Cleaning normalizes UTC, sorts records, and merges identical duplicates. Invalid numbers, inconsistent OHLC values, and conflicting duplicates reject the batch. Stored price comparisons allow relative/absolute floating-point tolerance of `1e-12` for cross-platform round trips; other fields are compared exactly, and existing rows are not overwritten. The primary key includes symbol, timestamp, source, and adjustment.
 
-## MySQL 部署
+The engine accepts one symbol of completed, raw daily bars per run. Minute bars and incomplete daily bars must not be supplied. Corporate actions are not modeled.
 
-本机已安装 Docker Desktop，MySQL 8.4 容器已启动。全部 21 项测试通过，包括真实 MySQL 数据读写和事务回滚。
+## MySQL setup
 
-新机器安装 Docker 后，创建 `.env`（不要提交），把 `.env.example` 中两个数据库密码改为不同的强密码。本机已生成私有配置，请勿覆盖：
+MySQL 8.4 is deployed through Docker Compose with a persistent volume and a port bound only to `127.0.0.1`. A local private `.env` already exists on the verified Mac. Do not overwrite it.
+
+On a new machine, copy `.env.example` to `.env` and replace both database passwords with different strong passwords:
 
 ```sh
 cp .env.example .env
-# 编辑 .env 后：
+# Edit .env, then export its values:
 set -a
 . ./.env
 set +a
 python3 -m venv .venv
 . .venv/bin/activate
 python3 -m pip install '.[mysql]'
-docker compose up -d --wait
+python3 scripts/build_cpp.py
+docker compose up -d --wait mysql
 python3 -m usquant demo --backend mysql --native
 USQUANT_TEST_MYSQL=1 python3 -m unittest discover -s tests -v
 ```
 
-Compose 只绑定 127.0.0.1；MySQL 使用持久卷。凭据来自环境变量，不进入运行报告。Python 不会自动读取 `.env`，Compose 会。停止服务使用 `docker compose stop`，保留数据库卷。
+Compose reads `.env` automatically; Python does not. Credentials are not included in reports. `docker compose stop` preserves database data.
 
-## 真实行情（只读）
+## Real historical data: Alpaca
 
-Alpaca 凭据只通过环境变量提供，建议使用模拟账户凭据。默认 IEX，不假定拥有 SIP 权限。尚未填写 Alpaca 凭据，目前仅用模拟 HTTP 响应验证分页与 GET 请求，未进行真实 API 验证。
+Use environment variables for credentials, preferably from a dedicated paper account. IEX is the default feed; SIP access is not assumed. IEX volume is not equivalent to consolidated US market volume.
 
 ```sh
 export ALPACA_API_KEY='your-key'
@@ -64,51 +75,43 @@ python3 -m usquant fetch --symbol SPY --start 2024-01-01T00:00:00Z --end 2024-04
 python3 -m usquant backtest --symbol SPY --source alpaca-iex --native
 ```
 
-抓取使用 raw 日线，保存独立 CSV 快照。建议使用历史结束日期，避免未完成日线。HTTP 错误中止运行；尚无自动重试/速率控制/流式接入。没有下载第三方框架代码或从网页抓取行情。
+The adapter requests raw daily bars, handles pagination, preserves a uniquely named CSV snapshot, and ingests validated records. Use a historical end date to avoid incomplete bars. HTTP failures stop the operation. Automatic retry, rate limiting, and streaming ingestion are not implemented. Data is retrieved through the API rather than scraped from web pages.
 
-## 策略、成交与风控
+## Strategy, fills, and risk
 
-配置见 `config/example.json`：初始 2500 USD、5/20 日均线、整数股仅做多。上一根收盘快均线高于慢均线，下一根开盘入场；反向信号下一根开盘平仓。现金保留手续费，成交价格包含固定方向滑点。
+Defaults in `config/example.json`: USD 2,500 initial cash, 5/20-day moving averages, integer shares, and long-only positions. A signal calculated at the previous close is executed at the next open. Commission and directional slippage are included.
 
-默认单股票仓位 20%、单笔入场金额 500 USD、历史已知成交量参与率 1%、峰值回撤 8%、单日损失 3%。停机后本次运行不会重新开仓；已有持仓在可成交的下一根开盘尝试退出。紧急开关拒绝入场。零成交量不模拟成交。停机阈值不能保证实际亏损不超过阈值，隔夜跳空仍可能超限。
+Entry limits: 20% per-symbol exposure, USD 500 per order, 1% participation based on previously known volume, 8% peak drawdown, and 3% daily loss. A halt stays latched for the replay; existing positions attempt to exit at the next executable open. Zero-volume bars do not fill. Gaps can exceed configured loss thresholds.
 
-清仓为风险减少动作，不受入场金额/参与率限制；这只是研究撮合假设，并不说明市场能全部成交。期末持仓按收盘价估值，不强制平仓。回测结果含总收益、最大回撤、成交记录和每根权益；未实现 Sharpe、基准比较或样本外策略评估。
+Risk-reducing exits bypass entry notional and participation limits. This is a research fill assumption, not a liquidity guarantee. Remaining positions are marked at the final close rather than forcibly liquidated. Results include total return, maximum drawdown, fills, and per-bar equity; Sharpe, benchmark comparison, and out-of-sample evaluation are not implemented.
 
-## 实盘边界与未完成项
+## Alpaca paper-account execution
 
-`python3 -m usquant live` 明确失败；`LiveBroker` 构造也拒绝运行。配置或环境变量不能打开实盘。后续必须单独得到用户确认，再实现并审查执行适配器。
-
-生产前还需：交易日历/数据陈旧检查、拆分与分红、退市与幸存者偏差、持续模拟账户和重启恢复、订单状态机及幂等键、部分成交和账户对账、告警、断线与限频、结算资金和账户交易权限。README 中的样例策略没有被证明具有盈利能力。
-
-## Alpaca 模拟账户实时接口
-
-固定连接 `https://paper-api.alpaca.markets`，拒绝重定向，不能配置实盘地址。先配置模拟账户的 ALPACA_API_KEY、ALPACA_SECRET_KEY。预览仅发 GET；加 --submit 才向模拟账户发订单：
+The adapter uses only `https://paper-api.alpaca.markets`, rejects redirects, and provides no configurable live endpoint. Preview uses GET requests only; `--submit` sends an order to the paper account:
 
 ```sh
 python3 -m usquant.paper_broker --symbol SPY --qty 1 --side buy --client-id spy-test-001
 python3 -m usquant.paper_broker --symbol SPY --qty 1 --side buy --client-id spy-test-001 --submit
 ```
 
-仅支持正常交易时段、整数股、股价 ≥1 USD 的美股限价 DAY 单。入场检查：现金、单笔金额、单股仓位、总敞口、单日损失、已观察峰值回撤、kill switch。禁止卖超已有持仓；有任何挂单时拒绝新订单；报价超过 60 秒或来自未来时拒绝。没有离线回测的成交量参与率撮合模型。
+Supported scope: regular market hours, integer shares, US equities priced at least USD 1, and DAY limit orders. Entry checks cover cash, order notional, symbol exposure, gross exposure, daily loss, observed peak drawdown, and the kill switch. Selling beyond owned shares is rejected. Any open order blocks new orders. Quotes older than 60 seconds or dated in the future are rejected. The replay volume-participation model does not apply to brokerage execution.
 
-提交前写入 data/paper.sqlite。重复原 client-id 查询券商状态而不再次 POST，同一 id 参数不能改变。超时后按原 id 对账，未决提交阻止其他新订单；未查到旧订单时必须人工检查模拟账户，不要更换 id 或删除日志绕过保护。日志保存订单状态和账户峰值，不保存凭据。accepted 不等于成交。
+Intent is written to `data/paper.sqlite` before submission. Reusing a client ID queries the broker instead of sending another POST; its parameters cannot change. After a timeout, reconcile using the original ID. An uncertain submission blocks new IDs. If the broker cannot locate the prior order, inspect the paper account manually rather than changing IDs or deleting the journal. The journal stores order state and observed equity peaks, not credentials. `accepted` does not mean `filled`.
 
-每次只执行一次；回测信号尚未自动循环提交。本接口已通过模拟 HTTP 测试，但未提供凭据，未接真实模拟账户。请使用专用模拟账户，避免其他程序同时交易；本地锁不能约束外部操作。峰值只覆盖本程序观察期。实盘必须另行明确确认后实现。
+This is a one-shot interface. Backtest signals are not yet submitted in an unattended loop. Only mocked HTTP tests have run; no brokerage order has been sent. Use a dedicated paper account without external concurrent trading. Local locking cannot control other clients, and peak tracking covers only the program's observation period.
 
-## 容器内完整离线 MVP
+## Container workflow
 
-填好 .env 数据库密码后：
+After configuring database passwords:
 
 ```sh
 docker compose --profile mvp build app
 docker compose --profile mvp run --rm app
 ```
 
-构建编译 C++ 并运行单元测试；启动等待 MySQL 健康后执行 demo。报告写回 reports/，数据库保留在卷。当前机器已完成该流程验证。容器默认没有券商凭据，只运行离线链路。
+The build compiles C++ and runs unit tests. The application waits for MySQL health, runs the demo, and writes reports to the local `reports/` directory. This full workflow has been verified on the current Mac. Brokerage credentials are not passed into the container by default.
 
-## 当前 Mac 已安装的环境
-
-Docker Desktop、GitHub CLI、项目 .venv 和 MySQL 驱动已安装。若终端找不到 docker，可使用项目包装脚本：
+If Docker is not on the terminal path on macOS, use the supplied wrapper:
 
 ```sh
 ./scripts/docker.sh compose up -d --wait mysql
@@ -116,6 +119,12 @@ Docker Desktop、GitHub CLI、项目 .venv 和 MySQL 驱动已安装。若终端
 ./scripts/docker.sh compose --profile mvp run --rm app
 ```
 
-验证脚本读取本机 .env，不输出密码。MySQL 只绑定 127.0.0.1:3306。用 `./scripts/docker.sh compose stop` 停止服务并保留数据；再次运行 up 恢复。未来编辑源码后，容器执行前重新 build app。
+The verification script loads local `.env` without printing passwords. Rebuild the app image after changing source code.
 
-[GitHub 学习指南](docs/github-guide.md)。GitHub 私有仓库：[yongshang-liu/usquant](https://github.com/yongshang-liu/usquant)。本机和 GitHub 的代码通过 Git 同步。
+## Live trading and remaining work
+
+`python3 -m usquant live` fails explicitly, and `LiveBroker` refuses construction. Configuration and environment variables cannot enable live execution. Implementing it requires separate explicit user approval and review.
+
+Remaining work includes exchange calendars, corporate actions, survivorship bias, continuous strategy scheduling, restart recovery, complete order-state handling, partial fills, ongoing reconciliation, alerts, rate limits, settlement rules, and account restrictions. The example strategy has not been shown to be profitable.
+
+Repository: [yongshang-liu/usquant](https://github.com/yongshang-liu/usquant). Secrets, databases, order journals, and local build artifacts are excluded from Git.
