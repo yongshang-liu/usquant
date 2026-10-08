@@ -66,6 +66,8 @@ Compose reads `.env` automatically; Python does not. Credentials are not include
 
 ## Real historical data: Alpaca
 
+See the [free paper-account setup guide](docs/alpaca-setup.md) for credential configuration and a read-only end-to-end verification script.
+
 Use environment variables for credentials, preferably from a dedicated paper account. IEX is the default feed; SIP access is not assumed. IEX volume is not equivalent to consolidated US market volume.
 
 ```sh
