@@ -1,0 +1,15 @@
+{
+  "initial_cash": 2500,
+  "fast": 5,
+  "slow": 20,
+  "commission": 1.0,
+  "slippage_bps": 5,
+  "risk": {
+    "max_position_fraction": 0.20,
+    "max_order_notional": 500,
+    "max_drawdown": 0.08,
+    "max_daily_loss": 0.03,
+    "max_volume_fraction": 0.01,
+    "kill_switch": false
+  }
+}
