@@ -12,7 +12,7 @@
 - 实盘 CLI 拒绝执行，LiveBroker 拒绝构造。
 - Alpaca 行情分页、模拟账户订单与风控通过伪响应测试；未填写真实凭据、未发送券商订单。
 - Docker 应用构建测试通过；容器内 Python+C++ → MySQL → 回测 → 报告完整运行成功，结果与 Mac 本地相同。
-- 项目已初始化独立 main Git 仓库，排除了 .env、数据库、订单日志和编译产物；GitHub 已完成用户授权，私有仓库为 yongshangliuknu-afk/usquant。远程 Actions 的结果以 GitHub 页面为准。
+- 项目已初始化独立 main Git 仓库，排除了 .env、数据库、订单日志和编译产物；GitHub 已完成用户授权，私有仓库为 yongshang-liu/usquant。远程 Actions 的结果以 GitHub 页面为准。
 
 重现：在项目目录运行 `./scripts/verify_mysql.sh`；容器使用 README 的 build/run 命令。
 

@@ -118,4 +118,4 @@ Docker Desktop、GitHub CLI、项目 .venv 和 MySQL 驱动已安装。若终端
 
 验证脚本读取本机 .env，不输出密码。MySQL 只绑定 127.0.0.1:3306。用 `./scripts/docker.sh compose stop` 停止服务并保留数据；再次运行 up 恢复。未来编辑源码后，容器执行前重新 build app。
 
-[GitHub 学习指南](docs/github-guide.md)。GitHub 私有仓库：[yongshangliuknu-afk/usquant](https://github.com/yongshangliuknu-afk/usquant)。本机和 GitHub 的代码通过 Git 同步。
+[GitHub 学习指南](docs/github-guide.md)。GitHub 私有仓库：[yongshang-liu/usquant](https://github.com/yongshang-liu/usquant)。本机和 GitHub 的代码通过 Git 同步。
