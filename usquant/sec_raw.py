@@ -30,12 +30,29 @@ def initialize(store):
     store.db.commit()
 
 
-def archive(year,quarter,root,user_agent):
+def archive(year,quarter,root,user_agent,extract=False,refresh=False):
     if not re.fullmatch(r'[^\r\n]+\s[^\s@]+@[^\s@]+\.[^\s@]+',user_agent):
         raise ValueError('SEC_USER_AGENT requires an application and contact email')
     url=f'https://www.sec.gov/files/dera/data/financial-statement-data-sets/{year}q{quarter}.zip'
     directory=root/'data/sec_raw'/str(year)/('Q'+str(quarter))
     directory.mkdir(parents=True,exist_ok=True)
+    existing=sorted(directory.glob('*/manifest.json'))
+    if existing and not refresh:
+        manifest=max(existing,key=lambda p: json.loads(p.read_text())['retrieved_at'])
+        metadata=json.loads(manifest.read_text())
+        path=manifest.parent/'source.zip'
+        if hashlib.sha256(path.read_bytes()).hexdigest()!=metadata['batch_id']:
+            raise ValueError('stored archive checksum mismatch')
+        with zipfile.ZipFile(path) as z:
+            if z.testzip() is not None: raise ValueError('invalid ZIP checksum')
+            for table in TABLES:
+                matches=[n for n in z.namelist() if Path(n).name.lower()==table+'.txt']
+                if len(matches)!=1: raise ValueError('invalid archived source files')
+                raw=z.read(matches[0])
+                if hashlib.sha256(raw).hexdigest()!=metadata['files'][table]['sha256']:
+                    raise ValueError('archived file checksum mismatch')
+                if extract: (manifest.parent/(table+'.txt')).write_bytes(raw)
+        return manifest.parent,metadata
     temp=directory/'download.part'
     request=urllib.request.Request(url,headers={'User-Agent':user_agent})
     sha=hashlib.sha256()
@@ -63,7 +80,7 @@ def archive(year,quarter,root,user_agent):
                 raw=z.read(matches[0])
                 destination=target/(table+'.txt')
                 if destination.exists() and destination.read_bytes()!=raw: raise ValueError('stored source changed')
-                destination.write_bytes(raw)
+                if extract: destination.write_bytes(raw)
                 files[table]=dict(bytes=len(raw),sha256=hashlib.sha256(raw).hexdigest())
         metadata=dict(batch_id=identity,package_year=year,package_quarter=quarter,
                       source_url=url,retrieved_at=datetime.now(timezone.utc).isoformat(),files=files)
@@ -134,12 +151,17 @@ def readable_views(store,directory):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--import-mysql',action='store_true',help='Explicitly extract and import; default only archives ZIP')
+    parser.add_argument('--refresh',action='store_true',help='Check SEC for a new source version')
     parser.add_argument('--year',type=int,required=True)
     parser.add_argument('--quarter',type=int,choices=range(1,5),required=True)
     args=parser.parse_args()
     if not 2009<=args.year<=datetime.now().year: parser.error('invalid year')
     root=Path(__file__).resolve().parents[1]; load_env(root)
-    directory,metadata=archive(args.year,args.quarter,root,os.getenv('SEC_USER_AGENT',''))
+    directory,metadata=archive(args.year,args.quarter,root,os.getenv('SEC_USER_AGENT',''),extract=args.import_mysql,refresh=args.refresh)
+    if not args.import_mysql:
+        print(json.dumps(dict(package=f'{args.year}Q{args.quarter}',status='archived',path=str(directory/'source.zip'))))
+        return
     store=Store('mysql')
     try:
         result=ingest_archive(store,directory,metadata)

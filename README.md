@@ -134,3 +134,5 @@ Repository: [yongshang-liu/usquant](https://github.com/yongshang-liu/usquant). S
 For the multi-company issuer registry, resumable imports, annual pilot panel, and coverage limitations, see [Financial database](docs/financial-database.md). Read-only teaching queries are in [sql/financial-database.sql](sql/financial-database.sql).
 
 For the raw quarterly archive and industry/year classification layers, see [Raw SEC archive](docs/raw-sec-archive.md). This is independent of the experimental research panel.
+
+Financial data currently uses an archive-only workflow: official ZIP files organized by year and quarter, with checksums. Experimental companyfacts data and financial MySQL tables have been removed locally. See [Raw archive](docs/raw-sec-archive.md).
