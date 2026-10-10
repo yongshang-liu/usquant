@@ -26,6 +26,7 @@ Keep passwords out of screenshots and Git. The first connection need not save th
 ## Understand the existing tables
 
 - `bars`: one daily price record per symbol, timestamp, source, and adjustment. `open`, `high`, `low`, and `close` are prices; `volume` is feed-specific trading volume. `ts` is a normalized UTC timestamp stored as text.
+- `financial_facts`: selected SEC financial facts with accounting periods, filing dates, units, and preserved filing versions. See [the financial-data guide](fundamentals.md).
 - `runs`: one backtest result per random run ID. `payload` is JSON stored in a TEXT column and contains summary, fills, and equity records. There is no created-at column, so the table cannot reliably identify the latest run by sorting IDs.
 - A **row** is one record; a **column** is one attribute. The `bars` primary key is a combination of four columns, which prevents duplicate identities while allowing different sources to coexist.
 - Synthetic bars and `alpaca-iex` bars are different datasets. Filter by source before comparing prices or calculating statistics.

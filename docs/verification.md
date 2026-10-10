@@ -24,3 +24,7 @@ Cross-platform verification exposed insignificant Mac/Linux libm rounding differ
 On October 8, 2026, the read-only verifier connected successfully to the paper endpoint and retrieved 252 SPY raw daily bars for calendar year 2024 from IEX. A local CSV snapshot was retained, records were validated and ingested into MySQL, and the C++-enabled backtest completed.
 
 The example strategy produced 2 simulated fills, USD 2529.6105025 final equity from USD 2500, 1.18442% total return, and 0.39531% maximum drawdown. These describe this one historical IEX sample and the implemented fill assumptions, not a validated profitable strategy. No brokerage order was submitted. Raw prices do not account for dividends, and IEX is not consolidated US market data. The dataset and run records stay local and are excluded from Git.
+
+## SEC fundamentals verification — October 10, 2026
+
+Real SEC Company Facts ingestion stored 7,226 selected fact versions for AAPL, MSFT, and NVDA in MySQL. Reimporting the retained snapshots inserted zero duplicate rows. Conservative as-of filtering and all tutorial queries were verified on real data. All 25 tests passed, including financial version persistence and MySQL round trips. The contact email and downloaded snapshots remain local. See docs/fundamentals.md for availability and statement-normalization limitations.

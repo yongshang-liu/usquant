@@ -20,3 +20,19 @@ class MySQLIntegration(unittest.TestCase):
         finally:
             with s.cursor() as c: c.execute('DELETE FROM bars WHERE source=%s',(source,))
             s.db.commit(); s.close()
+
+    def test_financial_facts_roundtrip(self):
+        from usquant.fundamentals import normalize, ingest, as_of
+        from test_fundamentals import fixture
+        s=Store('mysql')
+        symbol='T'+uuid.uuid4().hex[:12].upper()
+        try:
+            rows=normalize(fixture(),symbol)
+            self.assertEqual(ingest(s,rows),3)
+            self.assertEqual(ingest(s,rows),0)
+            self.assertEqual(as_of(s,symbol,'2023-05-01'),[])
+            self.assertEqual(as_of(s,symbol,'2023-05-02')[0]['value'],'100')
+            self.assertEqual(as_of(s,symbol,'2024-05-02')[0]['value'],'90')
+        finally:
+            with s.cursor() as c: c.execute('DELETE FROM financial_facts WHERE symbol=%s',(symbol,))
+            s.db.commit(); s.close()
