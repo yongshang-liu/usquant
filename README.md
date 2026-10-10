@@ -132,3 +132,5 @@ Remaining work includes exchange calendars, corporate actions, survivorship bias
 Repository: [yongshang-liu/usquant](https://github.com/yongshang-liu/usquant). Secrets, databases, order journals, and local build artifacts are excluded from Git.
 
 For the multi-company issuer registry, resumable imports, annual pilot panel, and coverage limitations, see [Financial database](docs/financial-database.md). Read-only teaching queries are in [sql/financial-database.sql](sql/financial-database.sql).
+
+For the raw quarterly archive and industry/year classification layers, see [Raw SEC archive](docs/raw-sec-archive.md). This is independent of the experimental research panel.
