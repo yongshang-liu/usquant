@@ -130,3 +130,5 @@ The verification script loads local `.env` without printing passwords. Rebuild t
 Remaining work includes exchange calendars, corporate actions, survivorship bias, continuous strategy scheduling, restart recovery, complete order-state handling, partial fills, ongoing reconciliation, alerts, rate limits, settlement rules, and account restrictions. The example strategy has not been shown to be profitable.
 
 Repository: [yongshang-liu/usquant](https://github.com/yongshang-liu/usquant). Secrets, databases, order journals, and local build artifacts are excluded from Git.
+
+For the multi-company issuer registry, resumable imports, annual pilot panel, and coverage limitations, see [Financial database](docs/financial-database.md). Read-only teaching queries are in [sql/financial-database.sql](sql/financial-database.sql).
