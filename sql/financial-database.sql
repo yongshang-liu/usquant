@@ -16,3 +16,8 @@ FROM annual_panel ORDER BY cik, period_end LIMIT 50;
 -- Observe availability and metric coverage before selecting a research sample.
 SELECT SUBSTRING(period_end,1,4) AS period_end_year, COUNT(DISTINCT cik) AS issuers
 FROM annual_panel GROUP BY SUBSTRING(period_end,1,4) ORDER BY period_end_year;
+
+-- Wide numeric view: run sql/annual-panel-view.sql once to install.
+SELECT symbol, period_end, revenues, net_income, assets, liabilities,
+       operating_cash_flow, diluted_eps
+FROM annual_panel_readable ORDER BY symbol, period_end, cutoff;

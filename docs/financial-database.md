@@ -45,3 +45,7 @@ Today's SEC companyfacts cannot guarantee historical point-in-time completeness.
 ## Official references
 
 [SEC EDGAR APIs](https://www.sec.gov/search-filings/edgar-application-programming-interfaces) documents standard entity-wide facts, XBRL history and nightly bulk archives. Bulk archives are the preferred next step for broad historical discovery; the incremental client here limits itself to one request per second.
+
+## Readable wide view
+
+Run `sql/annual-panel-view.sql` in MySQL once, then refresh Sequel Ace's table list and select `annual_panel_readable` under views. Its eleven metrics are independent numeric columns. Use `ORDER BY symbol, period_end, cutoff` in queries for stable order. Dollar-valued metrics are USD, diluted EPS is USD/share, diluted shares is shares. NULL means missing or ambiguous; inspect the underlying payload for the reason. Display values use DECIMAL(38,8); original decimal strings and source metadata remain intact in the underlying table. No records are copied, so newly built panel rows appear automatically.
