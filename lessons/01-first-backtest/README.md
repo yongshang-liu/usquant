@@ -1,34 +1,71 @@
-# Lesson 01 — observe a complete LEAN backtest
+# 第一课：逐行读懂一次完整 LEAN 回测
 
-Run from the repository root:
+## 一、先知道这一课在做什么
+
+本课只研究一个 SPY 标的，使用官方附带的 2013 年 10 月 7日至 11日分钟行情。初始虚拟资金 2,500 美元，在第一次收到有效行情时请求约 20% 的 SPY 仓位，之后不继续调仓。它不是成熟策略，而是用于看清程序的最小例子。
+
+[main.py](main.py) 已逐行写上中文注释。先看注释再读代码，不需要一开始就理解全部 C# 源码。
+
+## 二、运行之前先检查
+
+- Docker Desktop 已运行；它提供 LEAN 的隔离执行环境。
+- vendor/lean 已存在；其他电脑克隆时要带上 Git 子模块。
+- 从仓库根目录执行命令，而不是直接执行 main.py。
+- 样例只覆盖有限日期；暂时不把开始时间改成 2026 年，否则没有对应文件。
+
+## 三、按顺序运行
 
 ```sh
+# 第一步：只生成配置，打印结果目录，不启动容器。
+python3 scripts/run_lean.py first --prepare-only
+
+# 第二步：先跑官方原版示例，确认官方环境可以使用。
 python3 scripts/run_lean.py official
+
+# 第三步：跑本课逐行注释的算法。
 python3 scripts/run_lean.py first
 ```
 
-The first run executes the unchanged upstream BasicTemplateAlgorithm. The second executes `main.py` in this folder. Both use bundled sample SPY minute data. Neither has a network connection or credentials.
+这里 shell 中的 # 是说明，不是命令参数。每次生成单独的 results 目录，不会覆盖前一次运行。启动脚本也已添加逐行中文注释。
 
-## Follow the event sequence
+## 四、按事件顺序读 main.py
 
-1. `initialize` declares the time range, cash, brokerage model and equity subscription.
-2. LEAN's file data feed advances its algorithm clock and delivers a Slice to `on_data`.
-3. The first valid SPY bar generates a 20% target. `set_holdings` asks LEAN to determine the required order quantity.
-4. Order events reveal status changes and the modelled fill; a target is not itself a filled trade.
-5. LEAN updates cash, positions, portfolio value and statistics.
-6. `on_end_of_algorithm` records the terminal value. An open final position is not a forced sale.
+1. **导入**：AlgorithmImports 提供 LEAN 算法接口。这个文件由 LEAN 容器加载，普通系统 Python 并不自带这些模块。
+2. **定义类**：FirstBacktest 继承 QCAlgorithm。父类提供时钟、证券订阅、账户与订单接口。
+3. **initialize**：引擎只在初始化阶段调用它。这里设置历史日期、虚拟资金、分钟订阅和现金账户模型。
+4. **on_data**：随着历史时钟推进，逐次接收行情 Slice。先确认存在 SPY 行情，再决定是否请求仓位。
+5. **状态标记**：_submitted 在请求前设为 True，避免本课每分钟重复发出同一个目标。它不代表已经成交，也不会自动恢复失败订单。
+6. **目标仓位**：set_holdings(symbol, 0.20) 的 0.20 是目标资产比例。引擎据此计算整股数量和购买力，不是买入 0.2 股。
+7. **on_order_event**：观察 Submitted 和 Filled。一个订单可以有多条事件，真实环境还要处理部分成交、撤单和拒单。
+8. **结束汇总**：on_end_of_algorithm 输出总资产。没有显式卖出，所以结束总资产并不全是现金。
 
-## Inspect your output
+## 五、怎样看过程
 
-Open the printed `results/YYYYMMDD-HHMMSS-first/` directory. Start with `console.log`, searching for `SIGNAL`, `ORDER`, and `END`. Then find the algorithm result JSON: inspect orders, fills, portfolio equity, fees and statistics. Use the neighboring `provenance.json` to identify the actual image and source checkout. Do not edit the runtime config and assume it affects future runs; the launcher regenerates it.
+先打开这次结果目录的 console.log：
 
-## Do these exercises yourself
+- 找 SIGNAL：表示策略发出了交易意图。
+- 找 ORDER 和 Submitted：表示引擎接收了订单请求。
+- 找 ORDER 和 Filled：表示回测模型给出模拟成交，不是券商成交回报。
+- 找 END：查看最终总资产。
+- 找 STATISTICS：这是 LEAN 统计结果。五天样例只用来验证流程，不用来证明长期收益。
 
-- Before running, estimate how many whole SPY shares USD 500 can buy during the sample.
-- Explain why the actual invested fraction can differ from exactly 20%.
-- Change the holdings target to 10%; run again and compare order quantities and fees.
-- Log `self.portfolio.cash` before and after order events.
-- Remove the `_submitted` guard in a copy, run it, and inspect repeated target requests.
-- Identify the engine class that determines whether the order is affordable.
+接着读算法结果 JSON 的 orders、statistics 和 charts；订单事件 JSON 的结构可能是事件列表。provenance.json 记录源码和实际镜像版本，config.json 记录本次配置。这些是运行结果，不应与原始行情混为一谈。
 
-Do not extend the date range yet: the bundled sample does not contain a complete historical market database. Do not interpret a five-day sample result as evidence of a profitable strategy.
+## 六、已核对的例子
+
+2026 年 10 月 20 日的成功运行中，历史算法时间 2013-10-07 09:31（纽约时间）形成信号，随后出现订单提交和成交事件：模拟买入 3 股 SPY，模型手续费 1 美元，最终总资产约 2,506.39 美元。
+
+样例使用引擎默认数据归一化设置，成交日志中的价格不能直接当成今天的市场报价。没有强制平仓，也没有连接券商。这一结果只作为学习时对照；升级数据或模型后需要重新验证。
+
+## 七、自己做四个小练习
+
+1. 把 20% 改为 10%，先估计股数，再运行比较。观察为什么整股约束使比例不一定恰好等于目标。
+2. 改起始资金，比较股数和费用。其他变量一次只改一个，才知道变化来自哪里。
+3. 在订单事件中输出现金余额，对比总资产。思考浮盈、现金和已实现利润的区别。
+4. 在自己的实验副本中取消 _submitted 限制，观察目标请求与实际成交次数的区别。
+
+每个实验都保存参数、结果目录和观察结论。不要为了看到更高收益而随意放松风险限制。
+
+## 八、接下来学什么
+
+理解第一课后，先学习数据和证券身份，再学习指标、因子、组合与风控。随后进入券商模拟，最后保留真实盘阶段。详见 [中文学习路线](../../docs/learning-path.md)。

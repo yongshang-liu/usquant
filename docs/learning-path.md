@@ -1,60 +1,77 @@
-# LEAN learning path
+# LEAN 中文学习路线：从读懂一笔交易，到完整量化系统
 
-The objective is to understand and recreate each system layer using LEAN's contracts, while retaining upstream attribution. Work through one verified exercise at a time; do not start by modifying thousands of engine files.
+这套课程的目标是让你能解释每一步、亲自修改并重现结果。先学习小例子，再沿官方源码追踪机制；不会因为复制了一个仓库，就声称已经掌握整套交易系统。
 
-## 1. Run and observe the official algorithm
+## 从哪里开始
 
-Run `python3 scripts/run_lean.py official`. Source: `vendor/lean/Algorithm.Python/BasicTemplateAlgorithm.py`. Sample: SPY minute bars for 7–11 October 2013, bundled by upstream for testing, not a modern research dataset. Follow initialization, security subscription, OnData, holdings request and fills. Read the run's `console.log`, result JSON and order-events JSON. This is an engine smoke test, not a performance claim.
+1. 打开 [第一课中文说明](../lessons/01-first-backtest/README.md)。
+2. 阅读 [第一课逐行注释算法](../lessons/01-first-backtest/main.py)，先理解三个事件方法。
+3. 阅读 [逐行注释启动脚本](../scripts/run_lean.py)，理解程序如何调用真正的 LEAN。
+4. 对照 [运行配置字段解释](zh/configuration.md)，区分本机目录、容器目录和交易账户。
+5. 最后打开 [官方示例中文导读](zh/official-example.md)，对照未修改的原版代码。
 
-## 2. Write the smallest strategy yourself
+现有第一课已经在本机真实 LEAN 中完成回测。中文注释不是额外的执行规则；修改注释不会改变算法。后面每新增一个自写模块，继续提供逐行中文解释和可复现步骤。完整官方引擎有大量文件，尚未全部翻译，后续按课程涉及的模块逐步补充中文导读。
 
-Read `lessons/01-first-backtest/main.py`, then run `python3 scripts/run_lean.py first`. USD 2,500 initial cash and one 20% SPY holdings target make the control flow easy to follow. Compare the signal time to order-event timestamps. An order request and a filled position are different states.
+## 第一阶段：看懂程序与事件
 
-Exercises: change initial cash; change the target to 10%; log the current cash; explain why the `_submitted` flag is set before requesting holdings; compare whole-share sizing to the holdings percentage. Keep dates within the bundled sample. A market order's fill rules are LEAN's rules, not the previous engine's assumptions.
+**你要回答的问题：谁调用了我的算法？**
 
-## 3. Trace the engine source
+Python 文件定义一个继承 QCAlgorithm 的类，LEAN 引擎负责实例化它。initialize 声明回测范围、资金和数据订阅；on_data 随数据流推进而触发；on_order_event 接收订单状态变化。它们不是三个需要手动依次调用的函数。
 
-Read these directories in order:
+练习：在样例范围内运行；找到 SIGNAL、Submitted、Filled 和 END；解释信号时间、成交时间、现金、股票数量、最终总资产。先预测结果，再修改资金和仓位目标，比较实际变化。
 
-- `Algorithm/`: QCAlgorithm lifecycle, subscriptions, orders and portfolio API.
-- `Common/`: securities, market data, symbol identifiers, orders and portfolio contracts.
-- `Engine/DataFeeds/`: subscriptions, trading calendars, time synchronization and data delivery.
-- `Engine/TransactionHandlers/`: order processing and brokerage interaction.
-- `Common/Securities/`: fill, fee, buying power and portfolio models.
-- `Engine/Results/`: logs, charts and result artifacts.
-- `Algorithm.Framework/`: Universe → Alpha → Portfolio Construction → Risk Management → Execution.
-- `Brokerages/`: available interfaces; external brokerage implementations may live in separate upstream repositories.
+## 第二阶段：理解数据与 MySQL 接口
 
-Use official regression examples and tests to learn expected behavior. Do not confuse a modelled backtest fill with a broker-confirmed fill.
+**你要回答的问题：这个数字在当时是否可知？**
 
-## 4. Data and MySQL adapters (next)
+先分清证券标识与代码、交易时区与存储时区、交易日期与财务期末、财报提交时间与实际公开时间、原始价格与复权价格。再实现版本化导出或自定义数据读取器，把 MySQL 里的少量记录接入 LEAN，逐条核对后再扩大。
 
-Build a versioned exporter or custom data reader. First identify the security, exchange timezone, session convention, raw/adjusted prices, mapping and factor files, missing sessions and corporate actions. Preserve original source metadata. Test a tiny exported interval against known source records before importing years of data.
+已有 MySQL 数据仍保留，但目前第一课使用的是官方样例。SEC 标准概念数据不是 LEAN 自带的完整商业基本面数据库；不能把期末日期直接当成因子可用日期。公司前身、SPAC、拆股和股息也必须处理清楚。
 
-Existing IEX data is single-exchange data. Existing SEC facts are standard entity-wide concepts, not a licensed LEAN fundamental dataset. Financial data must become available at a verified disclosure timestamp, never automatically at period-end. Ticker predecessor/SPAC history needs a deliberate identity mapping. These adapters are not implemented by the first two lessons.
+## 第三阶段：指标、因子与预热
 
-## 5. Indicators and factors
+**你要回答的问题：信号用了哪些过去的数据？**
 
-Implement one LEAN indicator example; inspect warm-up and History behavior. Add a fixed-parameter momentum example. Then build a separate financial factor with explicit disclosure availability. Save configuration and data versions; avoid selecting parameters on the final evaluation period.
+先学习一个均线指标的输入、更新频率、预热长度与是否就绪，再研究动量和波动率。财务因子单独定义指标口径、单位、期间和披露版本。记录每次实验的参数和数据版本，不能用最终测试期反复挑最好参数。
 
-## 6. Portfolio, risk and evaluation
+## 第四阶段：组合与风控
 
-Use LEAN framework models to separate signal generation, targets, constraints and execution. Add fees, slippage, liquidity constraints and risk stops explicitly. Compare to a suitable benchmark; examine trade logs and inactive periods rather than headline returns alone.
+**你要回答的问题：为什么买这些股票、买多少、什么时候退出？**
 
-## 7. Broker-paper execution
+沿 LEAN Algorithm Framework 分开学习：Universe（证券范围）→ Alpha（信号）→ Portfolio Construction（目标仓位）→ Risk Management（风险约束）→ Execution（执行）。信号不等于仓位，仓位目标也不等于实际成交。
 
-Only after offline validation, configure a dedicated **paper** brokerage adapter and data feed. Reconcile positions, open orders, restart state, timestamps, duplicate submissions and disconnects. The current launcher cannot enter this mode. No real brokerage permission is inferred from learning or simulation requests.
+明确总资金、单票上限、总敞口、费用、滑点、流动性和停机规则。触发停机后的空仓期也属于策略结果，不应隐藏。
 
-## 8. Maintenance
+## 第五阶段：回测与评估
 
-Update the upstream submodule deliberately. Record the source revision, image revision, data provenance and regression results. Pin external dependencies; review licenses before copying code. Preserve secrets locally and keep a separate database backup.
+**你要回答的问题：这个结果可信到什么程度？**
 
-## Official references
+检查价格、成交模型和费用，再看收益与回撤；设置合理基准，并按时间划分开发、验证和测试区间。五天样例的年化收益和夏普没有稳定的研究解释，不能据此判断盈利能力。小样本、幸存者偏差和数据修订都需要披露。
 
-- https://github.com/QuantConnect/Lean
-- https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/algorithm-engine
-- https://www.quantconnect.com/docs/v2/writing-algorithms/algorithm-framework/overview
+## 第六阶段：连接券商模拟盘
 
-## Important: editing the engine vs editing an algorithm
+**你要回答的问题：研究程序到了实时环境会怎样？**
 
-The current Docker launcher runs official prebuilt binaries. Editing `lessons/` changes your Python strategy on the next run. Editing C# files under `vendor/lean/` does **not** rebuild that Docker image. When you reach engine development, follow the pinned upstream `readme.md` and `.vscode/readme.md` for a source build (the checked-out version requires .NET 10). Keep an independently built image identifiable; do not claim it is the same as the official pinned binary. A complete source build and the full upstream regression suite are separate tasks, not implied by passing our example backtests.
+使用明确的模拟账户和实时数据源。学习部分成交、拒单、撤单、重复请求、断线重连、程序重启后的账户对账和订单恢复。保存券商确认的信息，不能把程序打印的“已请求”当成“已成交”。
+
+当前启动器仍只开放离线回测，这一阶段尚未接入新 LEAN 流程。
+
+## 第七阶段：保留并最终实现真实盘
+
+**你要回答的问题：发生异常时，真实资金如何被保护？**
+
+实盘是保留的未来目标，不会删除。核心券商接口、官方源码中的实时环境和可选适配路线继续保留。详细要求见 [模拟盘与实盘路线](zh/execution-roadmap.md)。
+
+等前面阶段验证完成，再确定具体券商、账号类型、资金上限、交易标的、订单限制、损失阈值和人工接管方式。模拟账户验证通过不意味着实盘也已验证。届时需要针对具体配置明确确认，当前不启用真实订单。
+
+## 第八阶段：引擎源码与维护
+
+依次阅读：Algorithm、Common、Engine/DataFeeds、Engine/TransactionHandlers、Common/Securities、Engine/Results、Algorithm.Framework、Brokerages。按固定源码版本定位类和测试，记录每次升级。
+
+当前运行的是官方预编译镜像。修改 lessons 下的 Python 策略会在下一次运行生效；修改 vendor/lean 的 C# 源码不会自动重新编译镜像。学习引擎开发时，再按固定版本的官方 readme.md 和 .vscode/readme.md 配置 .NET 10、源码构建和测试。当前没有完成本机 C# 全量构建或官方全部回归测试，不把示例成功等同于这些验证。
+
+## 官方参考
+
+- [LEAN 官方源码](https://github.com/QuantConnect/Lean)
+- [算法引擎概念](https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/algorithm-engine)
+- [Algorithm Framework](https://www.quantconnect.com/docs/v2/writing-algorithms/algorithm-framework/overview)

@@ -1,21 +1,41 @@
+# GitHub 自动检查的名称；这是静态检查，不是完整 LEAN 回归测试。
 name: LEAN workspace checks
+# 有代码推送或拉取请求时执行，不会定时启动任何交易程序。
 on: [push, pull_request]
+# 定义检查任务集合。
 jobs:
+  # 当前只有一个静态检查任务。
   static-checks:
+    # 使用 GitHub 提供的 Linux 执行环境，与本机券商账户无关。
     runs-on: ubuntu-latest
+    # 以下步骤按顺序执行。
     steps:
+      # 下载本仓库代码；这里不下载庞大引擎镜像，也不访问本机 .env。
       - uses: actions/checkout@v4
+      # 配置用于语法检查的 Python；不是安装或替代 LEAN 引擎。
       - uses: actions/setup-python@v5
+        # 给安装动作提供版本参数。
         with:
+          # 使用 Python 3.11；容器内部版本由实际镜像决定。
           python-version: '3.11'
+      # 为下面的命令设置可辨认的步骤名称。
       - name: Check workspace Python syntax
+        # 编译检查 Python 语法，不执行课程中的交易逻辑。
         run: python -m py_compile scripts/run_lean.py lessons/01-first-backtest/main.py
+      # 检查镜像版本锁定和官方来源是否存在。
       - name: Check locked offline launcher
+        # 竖线表示下面是多行命令文本。
         run: |
+          # 用标准输入传入这段短 Python 检查程序。
           python - <<'PY'
+          # 导入 JSON 解析器，读取结构化版本文件。
           import json
+          # 导入路径工具，定位仓库文件。
           from pathlib import Path
+          # 将版本清单解析成字典。
           lock=json.loads(Path('configs/engine-lock.json').read_text())
+          # 每个镜像都应固定内容摘要，而不是只写 latest。
           assert all('@sha256:' in image for image in lock['images'].values())
+          # 检查子模块仍然引用官方源地址；不等同于验证整个上游源码。
           assert Path('.gitmodules').read_text().find('https://github.com/QuantConnect/Lean.git') >= 0
           PY

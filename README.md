@@ -2,6 +2,10 @@
 
 This project now follows **QuantConnect LEAN**. The old home-built engine is archived under `legacy/` and is no longer the active workflow. This is a learning workspace built around upstream LEAN, not an independently authored trading engine.
 
+## 中文学习入口
+
+现在起，自写课程和启动代码提供详细的逐行中文注释。请从[中文系统学习路线](docs/learning-path.md)、[第一课中文说明](lessons/01-first-backtest/README.md)和[配置字段中文解释](docs/zh/configuration.md)开始。官方引擎保持原样，通过[独立中文导读](docs/zh/official-example.md)学习。未来[真实盘路线](docs/zh/execution-roadmap.md)保留，当前只运行历史回测。
+
 ## Start here
 
 1. Read [the learning path](docs/learning-path.md).
@@ -35,7 +39,7 @@ Docker Desktop must be running. The first command downloads the pinned official 
 
 ## Execution boundary
 
-The supplied launcher exposes **offline backtesting only**, sets `live-mode=false`, removes live environments, disables container networking and passes no credentials. No real or broker-paper orders can be submitted by this launcher. A future broker-paper adapter will be designed and verified separately; real trading remains out of scope.
+The supplied launcher exposes **offline backtesting only**, sets `live-mode=false`, removes live environments, disables container networking and passes no credentials. No real or broker-paper orders can be submitted by this launcher. A future broker-paper adapter will be designed and verified separately. Live trading is a retained future milestone; it is currently disabled and requires separate configuration, verification and explicit authorization.
 
 LEAN's core is C#, with Python strategy support. MySQL remains a storage source for later adapters; LEAN consumes its own file/data contracts. The previous MySQL data is preserved, but is not silently treated as native LEAN equity data, Morningstar fundamentals or verified corporate-action history.
 
