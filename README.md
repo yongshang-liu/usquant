@@ -136,3 +136,5 @@ For the multi-company issuer registry, resumable imports, annual pilot panel, an
 For the raw quarterly archive and industry/year classification layers, see [Raw SEC archive](docs/raw-sec-archive.md). This is independent of the experimental research panel.
 
 Financial data currently uses an archive-only workflow: official ZIP files organized by year and quarter, with checksums. Experimental companyfacts data and financial MySQL tables have been removed locally. See [Raw archive](docs/raw-sec-archive.md).
+
+For the explicitly requested eight-company AI/fintech dataset in MySQL, see [Research sample](docs/research-sample.md) and [read-only queries](sql/research-sample.sql). The quarterly raw archive workflow remains separate.
