@@ -1,0 +1,18 @@
+{
+  "stage": "offline-rehearsal",
+  "brokerage": "Alpaca",
+  "paper_trading": true,
+  "live_enabled": false,
+  "total_capital_usd": 2500,
+  "max_order_usd": 500,
+  "max_position_fraction": 0.2,
+  "max_gross_fraction": 0.6,
+  "allow_short": false,
+  "allow_leverage": false,
+  "daily_loss_fraction": 0.03,
+  "drawdown_fraction": 0.08,
+  "kill_switch": false,
+  "account_reconciled": false,
+  "restart_test_passed": false,
+  "operator_approved": false
+}

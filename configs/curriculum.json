@@ -1,0 +1,11 @@
+{
+  "official": {"title":"官方原版示例","class":"BasicTemplateAlgorithm","path":"/Upstream/Algorithm.Python/BasicTemplateAlgorithm.py","min_orders":1},
+  "first": {"title":"第一课：算法生命周期","class":"FirstBacktest","path":"/Lessons/01-first-backtest/main.py","min_orders":1},
+  "data": {"title":"第二课：MySQL 与自定义数据","class":"DataCourse","path":"/Lessons/02-data-mysql/main.py","min_orders":0,"marker":"COURSE_OK:02"},
+  "factors": {"title":"第三课：指标与因子","class":"FactorCourse","path":"/Lessons/03-factors/main.py","min_orders":1,"marker":"COURSE_OK:03"},
+  "portfolio": {"title":"第四课：组合与风控","class":"PortfolioCourse","path":"/Lessons/04-portfolio-risk/main.py","min_orders":1,"marker":"COURSE_OK:04"},
+  "evaluation": {"title":"第五课：回测评估","class":"EvaluationCourse","path":"/Lessons/05-backtest-evaluation/main.py","min_orders":1,"marker":"COURSE_OK:05","parameters":["cost-bps"]},
+  "orders": {"title":"第六课：订单生命周期","class":"OrderCourse","path":"/Lessons/06-paper-orders/main.py","min_orders":1,"marker":"COURSE_OK:06"},
+  "deployment": {"title":"第七课：实盘部署离线演练","class":"DeploymentCourse","path":"/Lessons/07-live-deployment/main.py","min_orders":0,"marker":"COURSE_OK:07","parameters":["scenario"]},
+  "maintenance": {"title":"第八课：引擎与回归验证","class":"MaintenanceCourse","path":"/Lessons/08-engine-maintenance/main.py","min_orders":1,"marker":"COURSE_OK:08"}
+}

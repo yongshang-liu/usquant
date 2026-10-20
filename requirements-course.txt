@@ -1,0 +1,2 @@
+# 仅第二课的本机 MySQL 导出需要；LEAN 运行仍使用官方 Docker 镜像。
+PyMySQL[rsa]==1.1.1

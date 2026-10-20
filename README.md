@@ -4,7 +4,7 @@ This project now follows **QuantConnect LEAN**. The old home-built engine is arc
 
 ## 中文学习入口
 
-现在起，自写课程和启动代码提供详细的逐行中文注释。请从[中文系统学习路线](docs/learning-path.md)、[第一课中文说明](lessons/01-first-backtest/README.md)和[配置字段中文解释](docs/zh/configuration.md)开始。官方引擎保持原样，通过[独立中文导读](docs/zh/official-example.md)学习。未来[真实盘路线](docs/zh/execution-roadmap.md)保留，当前只运行历史回测。
+**八课课程材料已经完成：**请打开[完整课程目录](docs/curriculum.md)。自写课程和启动代码提供详细的逐行中文注释。请从[中文系统学习路线](docs/learning-path.md)、[第一课中文说明](lessons/01-first-backtest/README.md)和[配置字段中文解释](docs/zh/configuration.md)开始。官方引擎保持原样，通过[独立中文导读](docs/zh/official-example.md)学习。未来[真实盘路线](docs/zh/execution-roadmap.md)保留，当前只运行历史回测。
 
 ## Start here
 
@@ -39,9 +39,9 @@ Docker Desktop must be running. The first command downloads the pinned official 
 
 ## Execution boundary
 
-The supplied launcher exposes **offline backtesting only**, sets `live-mode=false`, removes live environments, disables container networking and passes no credentials. No real or broker-paper orders can be submitted by this launcher. A future broker-paper adapter will be designed and verified separately. Live trading is a retained future milestone; it is currently disabled and requires separate configuration, verification and explicit authorization.
+The supplied launcher exposes **offline backtesting only**, sets `live-mode=false`, removes live environments, disables container networking and passes no credentials. No real or broker-paper orders can be submitted by this launcher. Lesson 06 includes an offline order-state lab and a separate read-only Alpaca paper-account preflight; continuous LEAN broker-paper execution still requires separate integration and verification. Live trading is a retained future milestone; it is currently disabled and requires separate configuration, verification and explicit authorization.
 
-LEAN's core is C#, with Python strategy support. MySQL remains a storage source for later adapters; LEAN consumes its own file/data contracts. The previous MySQL data is preserved, but is not silently treated as native LEAN equity data, Morningstar fundamentals or verified corporate-action history.
+LEAN's core is C#, with Python strategy support. Lesson 02 now exports a small read-only MySQL snapshot to a custom LEAN data reader; MySQL remains the storage source; LEAN consumes its own file/data contracts. The previous MySQL data is preserved, but is not silently treated as native LEAN equity data, Morningstar fundamentals or verified corporate-action history.
 
 ## Provenance and attribution
 
@@ -49,4 +49,15 @@ Upstream is Apache-2.0 licensed. Its LICENSE and notices remain in the submodule
 
 The pre-migration implementation is recoverable at tag `pre-lean-2026-10-20` and branch `archive/pre-lean-2026-10-20`. No database or secret was deleted during this migration.
 
-Both the official example and Lesson 01 have completed real local LEAN backtests on Apple silicon; see [verification and limits](docs/verification.md).
+The official example and all eight course labs have completed actual local LEAN backtests on Apple silicon; see [verification and limits](docs/verification.md).
+
+## Run the complete course labs
+
+Follow [the Chinese curriculum](docs/curriculum.md) first. Lesson 02 requires the local MySQL export described in its guide; credentials stay local. Other labs use upstream sample data. The suite runs eight lessons plus cost and kill-switch scenarios; it submits no brokerage orders.
+
+```sh
+python3 -m unittest discover -s tests -v
+python3 scripts/run_suite.py
+```
+
+Course material completion does not mean production live-trading readiness. Lesson 07 teaches deployment planning and offline fault injection; production controls, persistent reconciliation, live brokerage integration and unattended execution remain separate commissioning work.

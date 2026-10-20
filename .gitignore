@@ -17,3 +17,6 @@ results/
 .lean-venv/
 configs/*.local.json
 local-data/
+
+# Isolated optional MySQL course dependencies
+.course-venv/

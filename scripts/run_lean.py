@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """中文导读：启动真实 LEAN 的离线历史回测，不在这里重写回测引擎。
 
-使用方式：python3 scripts/run_lean.py official 或 first。
+使用方式：python3 scripts/run_lean.py first；其他课程入口见 configs/curriculum.json。
 --prepare-only 只生成配置，适合先学习启动参数，不实际启动 Docker。
 官方源代码保留完整实时交易架构；本启动器只开放回测入口。
 """
 
-# argparse 负责解析命令行参数，例如选择 official 还是 first。
+# argparse 负责解析命令行参数，例如选择 first、data 或 factors。
 import argparse
 # datetime 用于给每次运行生成独立的结果目录名。
 import datetime
@@ -89,7 +89,9 @@ def read_json_comments(text):
 
 
 # 为指定课程生成配置；output 是本次结果目录，函数返回生成的配置文件路径。
-def prepare(lesson, output):
+def prepare(lesson, output, parameters=None):
+    # 课程清单只选择算法和验收条件，不允许它打开实时交易。
+    course = json.loads((ROOT / 'configs/curriculum.json').read_text())[lesson]
     # upstream 指向完整官方源码的 Git 子模块，而不是旧的 legacy 引擎。
     upstream = ROOT / 'vendor/lean'
     # 以官方配置为基础，保留必要的系统处理器和数据读取规则。
@@ -115,9 +117,9 @@ def prepare(lesson, output):
         # 策略采用 Python 编写，实际执行这些策略的 LEAN 核心仍是 C#。
         'algorithm-language': 'Python',
         # 选择要实例化的类名；必须和对应 Python 文件中的类声明一致。
-        'algorithm-type-name': 'BasicTemplateAlgorithm' if lesson == 'official' else 'FirstBacktest',
-        # official 直接运行未改动的官方示例，first 则运行我们逐行学习的课程文件。
-        'algorithm-location': '/Upstream/Algorithm.Python/BasicTemplateAlgorithm.py' if lesson == 'official' else '/Lessons/01-first-backtest/main.py',
+        'algorithm-type-name': course['class'],
+        # 课程清单给出所选 Python 文件的容器内绝对路径。
+        'algorithm-location': course['path'],
         # 帮助容器内的 Python 查找官方示例依赖和引擎提供的模块。
         'python-additional-paths': ['/Upstream/Algorithm.Python', '/Lean/Launcher/bin/Debug'],
         # 本地示例不需要 QuantConnect 云账户，这里的 0 是作业标识占位值。
@@ -131,6 +133,8 @@ def prepare(lesson, output):
         # 本地课程项目标识，不是券商账户编号。
         'job-project-id': '0'
     })
+    # 参数只传给算法；不会修改数据处理器、账户或运行模式。
+    config['parameters'] = parameters or {}
     # 开发检查：选用的官方回测环境也必须明确关闭实时模式。
     # assert 是检查，不是唯一防线；下面的断网运行和无凭据挂载同样重要。
     assert config['environments']['backtesting']['live-mode'] is False
@@ -148,16 +152,32 @@ def prepare(lesson, output):
 def main():
     # 以模块说明作为命令行帮助，用户可用 --help 查看。
     parser = argparse.ArgumentParser(description=__doc__)
+    # 读取可用课程，并保留 official 与 first 这两个原入口。
+    courses = json.loads((ROOT / 'configs/curriculum.json').read_text())
     # 唯一必填参数是课程名；不接受 live 参数，避免把本课入口当成实盘入口。
-    parser.add_argument('lesson', choices=['official', 'first'])
+    parser.add_argument('lesson', choices=list(courses))
     # 此开关只准备文件，不启动 Docker；默认值为 False。
     parser.add_argument('--prepare-only', action='store_true')
+    # 可重复传入算法实验参数，例如 --parameter cost-bps=20。
+    parser.add_argument('--parameter', action='append', default=[])
     # 将命令行输入解析成 args.lesson、args.prepare_only 等属性。
     args = parser.parse_args()
+    # 为该课程检查参数名，拒绝把任意配置项伪装成算法参数。
+    parameters = {}
+    # 逐条解析用户给出的 name=value。
+    for item in args.parameter:
+        # partition 保留等号之后的文本，避免对多个等号错误拆分。
+        key, separator, value = item.partition('=')
+        # 只接受课程清单明确声明的算法参数。
+        if not separator or key not in courses[args.lesson].get('parameters', []):
+            # 参数错误时停止，不启动容器。
+            parser.error('Unsupported course parameter: ' + item)
+        # 保存已经验证的参数。
+        parameters[key] = value
     # 用本机时间、微秒和课程名生成目录；它只用于文件命名，不是交易时间。
     output = ROOT / 'results' / (datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f') + '-' + args.lesson)
     # 写入这次实际使用的 LEAN 配置。
-    prepare(args.lesson, output)
+    prepare(args.lesson, output, parameters)
     # 读取固定版本清单；不依赖会随时间变化的 latest 镜像标签。
     lock = json.loads((ROOT / 'configs/engine-lock.json').read_text())
     # Apple 芯片通常返回 arm64，部分 Linux 返回 aarch64；其余按 AMD64 路线选择。
@@ -187,6 +207,8 @@ def main():
         return
     # 优先查 PATH；Mac 找不到 docker 时，再使用 Docker Desktop 的官方安装路径。
     docker = shutil.which('docker') or '/Applications/Docker.app/Contents/Resources/bin/docker'
+    # 所有课程保留这个隔离的数据目录；第二课使用其中的导出快照。
+    (ROOT / 'local-data').mkdir(exist_ok=True)
     # 用参数列表启动程序，而不是拼成 shell 文本，避免空格或特殊字符被误解释。
     command = [
         # Docker 客户端程序路径。
@@ -209,6 +231,8 @@ def main():
         '--mount', f'type=bind,src={ROOT / "vendor/lean"},dst=/Upstream,readonly',
         # 只读挂载课程算法；容器不能回写修改我们正在学习的代码。
         '--mount', f'type=bind,src={ROOT / "lessons"},dst=/Lessons,readonly',
+        # MySQL 导出的课程数据单独只读挂载；该目录不包含 .env。
+        '--mount', f'type=bind,src={ROOT / "local-data"},dst=/CourseData,readonly',
         # 结果目录需要可写，才能保存订单事件、统计和日志。
         '--mount', f'type=bind,src={output},dst=/Results',
         # 指定官方引擎镜像；镜像自身的入口是 dotnet + LEAN Launcher。
@@ -248,17 +272,24 @@ def main():
         if isinstance(data, dict) and 'statistics' in data:
             # 加入待验证结果列表。
             results.append(data)
-    # 本课预期至少有一个订单；这只是这两个教学例子的检查标准，不是所有策略的成功标准。
-    # 一个合法但没有交易的未来策略，需要使用适合它的独立验证规则。
-    if not results or not any(r.get('statistics', {}).get('Total Orders') not in (None, '0', 0) for r in results):
+    # 数据课可以合法地不交易，按各课最小订单数判断而非一律要求成交。
+    minimum = courses[args.lesson]['min_orders']
+    # 缺少统计或订单数不达标时，判定课程未完成。
+    if not results or not any(int(r.get('statistics', {}).get('Total Orders', 0)) >= minimum for r in results):
         # 缺少完成结果或预期订单时提示查看日志。
         raise SystemExit('No completed result with orders; inspect console.log')
     # 即使结果有统计字段，也不能忽视其中声明的算法运行错误。
     if any(r.get('runtimeError') for r in results):
         # 报错退出，防止把部分输出当成完整成功结果。
         raise SystemExit('LEAN runtime error')
+    # 高级课程在结束时执行断言并打印验收标记，避免把半途输出当成完成。
+    marker = courses[args.lesson].get('marker')
+    # 只在指定了标记的课程检查日志。
+    if marker and marker not in (output / 'console.log').read_text():
+        # 断言失败或没有执行到结尾，都不能算课程通过。
+        raise SystemExit('Missing course acceptance marker: ' + marker)
     # 只有检查通过才显示成功；订单是引擎模拟订单，不是券商确认。
-    print('Verified: actual LEAN result with orders')
+    print('Verified: actual LEAN course result and acceptance checks')
 
 
 # 直接运行本文件才进入 main；作为模块导入以检查 prepare 时不会自动启动 Docker。

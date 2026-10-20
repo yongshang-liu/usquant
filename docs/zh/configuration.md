@@ -52,3 +52,11 @@ Docker run 是启动容器，--rm 是运行后移除临时容器，不会删除�
 source_commit 是本次查询到的实际源码提交；runtime_image 是实际选择的镜像摘要；architecture 是架构；lesson 是课程；mode 是 offline-backtesting。文件名时间是本机运行时间，不是历史交易日期。
 
 这一份清单帮助复现，但不自动证明数据无偏差，也不等同于完整的数据授权或历史时点审计。
+
+## 五、课程清单与参数
+
+configs/curriculum.json 只注册课程：键是启动入口，class 是 Python 类名，path 是容器算法路径，min_orders 是验收所需最少订单，marker 是结束时的课程断言标记，parameters 是允许传入的算法参数名。它不能设置实时模式或券商凭据。
+
+第五课允许 `--parameter cost-bps=5` 或 20，单位是基点；第七课允许 `--parameter scenario=normal` 或 kill。参数先由启动器检查名称，再由算法检查取值。生成配置的 parameters 保存实际传入值；省略时算法采用默认值。
+
+local-data 映射到 /CourseData，只读且不含 .env。第二课 CSV 和 manifest 保存在这里；已有 MySQL 私有配置仍不挂载到引擎。部署教学 JSON 的全部字段说明见[第七课](../../lessons/07-live-deployment/README.md)，它不是实际 LEAN 启动配置。

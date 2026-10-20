@@ -21,7 +21,7 @@ jobs:
       # 为下面的命令设置可辨认的步骤名称。
       - name: Check workspace Python syntax
         # 编译检查 Python 语法，不执行课程中的交易逻辑。
-        run: python -m py_compile scripts/run_lean.py lessons/01-first-backtest/main.py
+        run: python -m compileall -q scripts lessons tests
       # 检查镜像版本锁定和官方来源是否存在。
       - name: Check locked offline launcher
         # 竖线表示下面是多行命令文本。
@@ -39,3 +39,7 @@ jobs:
           # 检查子模块仍然引用官方源地址；不等同于验证整个上游源码。
           assert Path('.gitmodules').read_text().find('https://github.com/QuantConnect/Lean.git') >= 0
           PY
+      # 工具测试不使用密钥，不启动 Docker 或访问券商。
+      - name: Test course tool boundaries
+        # 验证真实失败路径与图表口径，而不是只验证代码能导入。
+        run: python -m unittest discover -s tests -v
