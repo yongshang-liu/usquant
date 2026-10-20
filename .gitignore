@@ -11,3 +11,9 @@ dist/
 .DS_Store
 
 reports/momentum-paper.html
+
+# LEAN runtime artifacts and private local configuration
+results/
+.lean-venv/
+configs/*.local.json
+local-data/

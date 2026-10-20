@@ -1,30 +1,14 @@
-# Verification record
+# Local LEAN verification — 20 October 2026
 
-Verified on October 8, 2026 (Asia/Seoul), on macOS ARM64 with Python 3.9.6.
+Both backtests ran with the actual official ARM64 Docker image, network disabled, no brokerage credentials, and read-only upstream sample data/source mounts. Host is Apple silicon. Container reports LEAN v2.5.0.0 and Python 3.11.9.
 
-- C++17 indicators compile and match Python SMA across multiple windows, including warm-up NaNs.
-- Docker Desktop is installed; Docker Engine 29.8.2 and Compose v5.5.1 were checked.
-- MySQL 8.4 is healthy and bound only to `127.0.0.1:3306`. Local passwords are excluded from Git.
-- The project virtual environment and PyMySQL RSA authentication dependencies are installed. Real integration exposed a missing cryptography dependency, which was fixed.
-- All 21 tests passed without skips, including real MySQL read/write, duplicate ingestion, and rollback checks.
-- The MySQL demonstration processed 260 synthetic daily bars and 10 fills, producing final equity of USD 2601.726883 from USD 2500. This is a regression fixture, not investment performance.
-- SQLite replay and report generation passed.
-- The live CLI and LiveBroker reject execution.
-- Alpaca pagination, paper orders, and risk checks passed mocked HTTP tests. Subsequently, real paper-account authentication and historical data retrieval were verified using locally configured credentials. No brokerage orders were sent.
-- The Docker build passed its unit tests. The container completed Python+C++ → MySQL → backtest → report with the same result as the local Mac.
-- GitHub Actions passed C++ compilation, tests with MySQL, and the demonstration on the initial upload. Later runs can be inspected in [Actions](https://github.com/yongshang-liu/usquant/actions).
-- The private repository excludes credentials, databases, order journals, and build artifacts.
+| Run | Algorithm | Dates | Orders | Ending equity |
+|---|---|---|---|---|
+| `20261020-115749-467045-official` | Unmodified upstream BasicTemplateAlgorithm | 7–11 October 2013 | 1 | USD 101,691.92 (initial USD 100,000) |
+| `20261020-115820-103816-first` | FirstBacktest learning exercise | 7–11 October 2013 | 1 | USD 2,506.39 (initial USD 2,500) |
 
-Reproduce locally with `./scripts/verify_mysql.sh`; see README for container build/run commands.
+The exercise logged a signal at 7 October 2013 09:31 New York time, Submitted and Filled events for 3 SPY shares, a USD 1 modelled fee, and final portfolio value. The result JSON contained statistics and orders; the launcher returned success only after inspecting output artifacts. All 11 data requests succeeded in both completed runs. These are five-day engine/learning checks, not evidence of investment performance; annualized statistics from this tiny sample are not meaningful.
 
-Cross-platform verification exposed insignificant Mac/Linux libm rounding differences in synthetic prices. Stored price comparisons now allow relative/absolute tolerance of `1e-12`, while rejecting substantive conflicts and preserving existing rows. Regression coverage was added.
+Each result directory contains `config.json`, `provenance.json`, `console.log`, algorithm log, result JSON, summary JSON and order events as emitted by LEAN. Runtime artifacts are local, excluded from GitHub. Source and prebuilt image references are pinned independently; the engine was not compiled locally from the checked-out source. Full upstream unit/regression suites were not run. AMD64 is configured but not locally tested on this ARM machine.
 
-## Real-data verification
-
-On October 8, 2026, the read-only verifier connected successfully to the paper endpoint and retrieved 252 SPY raw daily bars for calendar year 2024 from IEX. A local CSV snapshot was retained, records were validated and ingested into MySQL, and the C++-enabled backtest completed.
-
-The example strategy produced 2 simulated fills, USD 2529.6105025 final equity from USD 2500, 1.18442% total return, and 0.39531% maximum drawdown. These describe this one historical IEX sample and the implemented fill assumptions, not a validated profitable strategy. No brokerage order was submitted. Raw prices do not account for dividends, and IEX is not consolidated US market data. The dataset and run records stay local and are excluded from Git.
-
-## SEC fundamentals verification — October 10, 2026
-
-Real SEC Company Facts ingestion stored 7,226 selected fact versions for AAPL, MSFT, and NVDA in MySQL. Reimporting the retained snapshots inserted zero duplicate rows. Conservative as-of filtering and all tutorial queries were verified on real data. All 25 tests passed, including financial version persistence and MySQL round trips. The contact email and downloaded snapshots remain local. See docs/fundamentals.md for availability and statement-normalization limitations.
+The first exercise initially failed on an enum spelling; it was corrected to `QUANT_CONNECT_BROKERAGE` and rerun successfully. Failed-run logs remain locally for traceability. Static syntax and offline-configuration checks also passed. No broker paper or real orders were sent, and no scheduled process was installed.

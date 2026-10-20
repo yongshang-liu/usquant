@@ -1,0 +1,3 @@
+[submodule "vendor/lean"]
+	path = vendor/lean
+	url = https://github.com/QuantConnect/Lean.git

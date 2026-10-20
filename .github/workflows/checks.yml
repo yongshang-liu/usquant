@@ -1,0 +1,21 @@
+name: LEAN workspace checks
+on: [push, pull_request]
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check workspace Python syntax
+        run: python -m py_compile scripts/run_lean.py lessons/01-first-backtest/main.py
+      - name: Check locked offline launcher
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          lock=json.loads(Path('configs/engine-lock.json').read_text())
+          assert all('@sha256:' in image for image in lock['images'].values())
+          assert Path('.gitmodules').read_text().find('https://github.com/QuantConnect/Lean.git') >= 0
+          PY

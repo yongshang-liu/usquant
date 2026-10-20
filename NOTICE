@@ -1,0 +1,5 @@
+USQuant now uses QuantConnect LEAN as its engine and learning reference.
+QuantConnect LEAN copyright and Apache License 2.0 notices are retained in vendor/lean.
+Official engine source: https://github.com/QuantConnect/Lean
+The previous independent MVP is archived under legacy/; it is not the active engine.
+New workspace scripts and lesson material do not claim authorship of upstream LEAN.

@@ -1,0 +1,9 @@
+{
+  "source_repository": "https://github.com/QuantConnect/Lean",
+  "source_commit": "61c598b66ed8051d156bba10001eab4f3e86bcb9",
+  "images": {
+    "arm64": "quantconnect/lean@sha256:2ec69f17fff6bdbc8737bd28f4914bc9547b746f79cac75cb3f33eccfb27056c",
+    "amd64": "quantconnect/lean@sha256:d3f79ace8bdfb20493190a5d44d212dcd1ce0faba197d9137cde96bb569e5115"
+  },
+  "note": "Official prebuilt binaries and source checkout are pinned independently; they are not claimed to be an identical build."
+}
