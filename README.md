@@ -138,3 +138,5 @@ For the raw quarterly archive and industry/year classification layers, see [Raw 
 Financial data currently uses an archive-only workflow: official ZIP files organized by year and quarter, with checksums. Experimental companyfacts data and financial MySQL tables have been removed locally. See [Raw archive](docs/raw-sec-archive.md).
 
 For the explicitly requested eight-company AI/fintech dataset in MySQL, see [Research sample](docs/research-sample.md) and [read-only queries](sql/research-sample.sql). The quarterly raw archive workflow remains separate.
+
+The first fixed-parameter momentum research and paper-account check is documented in [Momentum paper pipeline](docs/momentum-paper.md). It creates local reports and submits no orders.

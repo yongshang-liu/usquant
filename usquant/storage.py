@@ -29,7 +29,11 @@ class Store:
             raise ValueError('unsupported backend')
         with self.cursor() as c:
             c.execute(SCHEMA)
-            c.execute('CREATE TABLE IF NOT EXISTS runs (id VARCHAR(40) PRIMARY KEY, payload TEXT NOT NULL)')
+            c.execute('CREATE TABLE IF NOT EXISTS runs (id VARCHAR(40) PRIMARY KEY, payload LONGTEXT NOT NULL)')
+            if backend == 'mysql':
+                c.execute("SHOW COLUMNS FROM runs LIKE 'payload'")
+                if c.fetchone()[1].lower() != 'longtext':
+                    c.execute('ALTER TABLE runs MODIFY payload LONGTEXT NOT NULL')
         self.db.commit()
 
     def cursor(self):

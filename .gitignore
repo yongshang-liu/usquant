@@ -9,3 +9,5 @@ reports/latest.html
 *.egg-info/
 dist/
 .DS_Store
+
+reports/momentum-paper.html

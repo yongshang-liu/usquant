@@ -8,7 +8,8 @@ from .data import clean
 
 DATA_URL = 'https://data.alpaca.markets/v2/stocks/bars'
 
-def fetch_daily(symbols, start, end, feed='iex'):
+def fetch_daily(symbols, start, end, feed='iex', adjustment='raw'):
+    if adjustment not in ('raw','split','all'): raise ValueError('unsupported adjustment')
     if feed not in ('iex','sip'): raise ValueError('unsupported feed')
     start_dt = datetime.fromisoformat(start.replace('Z','+00:00'))
     end_dt = datetime.fromisoformat(end.replace('Z','+00:00'))
@@ -16,7 +17,7 @@ def fetch_daily(symbols, start, end, feed='iex'):
         raise ValueError('require timezone-aware start < end')
     if end_dt > datetime.now(timezone.utc): raise ValueError('end must be in the past')
     params = dict(symbols=','.join(symbols),start=start,end=end,timeframe='1Day',
-                  adjustment='raw',feed=feed,limit=10000,sort='asc')
+                  adjustment=adjustment,feed=feed,limit=10000,sort='asc')
     headers = {'APCA-API-KEY-ID':os.environ['ALPACA_API_KEY'],
                'APCA-API-SECRET-KEY':os.environ['ALPACA_SECRET_KEY']}
     rows, seen = [],set()
@@ -25,7 +26,7 @@ def fetch_daily(symbols, start, end, feed='iex'):
         with urllib.request.urlopen(req,timeout=30) as response: payload=json.load(response)
         for symbol, bars in payload.get('bars',{}).items():
             for b in bars:
-                rows.append(dict(symbol=symbol,ts=b['t'],open=b['o'],high=b['h'],low=b['l'],close=b['c'],volume=b['v'],source='alpaca-'+feed,adjustment='raw'))
+                rows.append(dict(symbol=symbol,ts=b['t'],open=b['o'],high=b['h'],low=b['l'],close=b['c'],volume=b['v'],source='alpaca-'+feed,adjustment=adjustment))
         token = payload.get('next_page_token')
         if not token: break
         if token in seen: raise ValueError('repeated pagination token')

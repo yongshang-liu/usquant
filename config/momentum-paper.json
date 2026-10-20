@@ -1,0 +1,15 @@
+{
+  "mode": "local-paper",
+  "symbols": ["NVDA", "AMD", "MSFT", "PLTR", "PYPL", "V", "SOFI", "COIN"],
+  "start": "2021-07-01",
+  "initial_cash": 2500,
+  "lookback": 126,
+  "skip": 21,
+  "vol_window": 20,
+  "top_n": 3,
+  "max_weight": 0.2,
+  "gross_limit": 0.6,
+  "one_way_cost_bps": 15,
+  "max_drawdown": 0.08,
+  "max_daily_loss": 0.03
+}
